@@ -42,6 +42,12 @@ Set `GOOGLE_SITE_VERIFICATION` to the Search Console verification token. Submit 
 
 Set a valid `NEXT_PUBLIC_GA_ID` to enable the analytics consent controls. No analytics is requested before acceptance. Events exclude enquiry content and contact information. Events: `contact_submission`, `website_review_submission`, `quote_click`, `portfolio_interaction`, `whatsapp_click`. No WhatsApp link is shown unless a verified contact number is configured. Supplied privacy and terms pages remain drafts requiring final business details and review.
 
+## Photography
+
+The supplied photographs are used as editorial imagery across the home, about, services and contact pages. They do not identify ARA employees, clients or offices. Responsive WebP files in `public/images` are served at 480, 800 and 1200 pixels wide; `src/photos.mjs` defines descriptions, dimensions and service placements.
+
+Original Pexels filenames: Gustavo Fring (`pexels-gustavo-fring-7446597.jpg`, businesswomen), Canva Studio (`pexels-canvastudio-3194519.jpg`, collaboration), Jakub Zerdzicki (`pexels-jakubzerdzicki-31313716.jpg`, creative editing), Alena Darmel (`pexels-a-darmel-7710082.jpg`, marketing partnership), and Artem Stoliar (`pexels-artem-stoliar-1550128219-37557082.jpg`, architecture).
+
 ## Vercel
 
 Import this project using the Next.js preset; use the repository root as the root directory. The install command is `npm ci`, build command is `npm run build`, and the output directory uses Next's default. Use Node 22 or 24. Configure preview and production variables separately. Keep indexing disabled in previews. Do not commit secrets or replace an existing production project without checking its ownership and scope. There is no purchased domain assumed.

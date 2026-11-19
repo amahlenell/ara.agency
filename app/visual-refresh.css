@@ -27,3 +27,32 @@ body{background:var(--background);color:var(--ink);font-family:Arial,Helvetica,s
 .header-wrap.wrap{width:100%}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline-color:#ee5c17}
 .legal p,.legal li,.article-toc a,.field small,.privacy-check,.contact-detail p,.page-intro>p,.breadcrumbs,.range-labels,.small-note,.price-card>p,.price-card .price-label,.filters button{color:#63665e}
+
+/* Editorial photographs retain their original colour and adapt to each layout. */
+.editorial-photo{display:block;position:relative;overflow:hidden;min-width:0;border-radius:14px;background:#dedfd8}
+.editorial-photo img{display:block;width:100%;height:100%;object-fit:cover}
+.photo-team img{object-position:50% 30%}
+.photo-collaboration img{object-position:50% 43%}
+.photo-partnership img{object-position:50% 53%}
+.photo-architecture img{object-position:52% 50%}
+.people-story .split{grid-template-columns:1fr 1fr;align-items:center}
+.people-story-photo{width:100%;aspect-ratio:4/5;max-height:610px}
+.people-story .split-copy{padding:20px 0}
+.people-story .split-copy p{max-width:480px}
+.service-intro{align-items:center}
+.service-photo{margin:42px 0 20px;min-width:0;background:var(--charcoal);border-radius:14px;overflow:hidden}
+.service-photo .editorial-photo{aspect-ratio:4/5;max-height:515px;border-radius:0}
+.service-photo .photo-creative img{object-position:46% 50%}
+.service-photo figcaption{display:flex;align-items:center;gap:12px;padding:20px 22px;color:#eee;font-size:14px;line-height:1.5}
+.service-photo figcaption .icon{color:var(--orange);flex-shrink:0;width:22px;height:22px}
+.about-photo-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:25px}
+.about-photo-grid .editorial-photo{height:490px}
+.about-photo-grid .photo-team img{object-position:50% 20%}
+.about-markets{grid-template-columns:.8fr 1.2fr;align-items:start}
+.about-markets>.editorial-photo{aspect-ratio:3/4;position:sticky;top:115px}
+.about-markets .section-heading{margin-bottom:24px}
+.about-markets .faq-list{margin-top:35px}
+.contact-photo{height:260px;margin-top:35px}
+.contact-photo img{object-position:50% 54%}
+@media(max-width:850px){.people-story .split{grid-template-columns:1fr 1fr}.people-story-photo{aspect-ratio:3/4}.service-photo{margin-top:30px}.service-photo .editorial-photo{max-height:400px}.service-photo figcaption{padding:16px;font-size:14px}.about-photo-grid{gap:18px}.about-photo-grid .editorial-photo{height:380px}.about-markets{grid-template-columns:.8fr 1.2fr}}
+@media(max-width:620px){.editorial-photo,.service-photo{border-radius:10px}.people-story .split,.about-markets{grid-template-columns:1fr}.people-story-photo{aspect-ratio:4/5;max-height:500px}.people-story .split-copy{padding:0}.service-photo{margin:0 0 15px}.service-photo .editorial-photo{aspect-ratio:5/4;max-height:none}.service-photo .photo-partnership img{object-position:50% 51%}.service-photo .photo-creative{aspect-ratio:3/2}.service-photo figcaption{padding:17px 18px}.about-photo-grid{grid-template-columns:1fr;gap:18px}.about-photo-grid .photo-team{height:auto;aspect-ratio:4/5}.about-photo-grid .about-collaboration{height:auto;aspect-ratio:3/2}.about-markets>.editorial-photo{position:static;aspect-ratio:5/4;max-height:350px}.contact-photo{height:230px;margin-top:28px}}
