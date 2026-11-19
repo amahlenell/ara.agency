@@ -1,14 +1,14 @@
-# ARA Studio: Phase 1 setup
+# ARA Studio: staff workspace and website audits
 
 ## What is implemented
 
 Staff sign-in/out, session validation, active admin/editor membership, protected dashboard, prospect creation/editing/archiving, domain deduplication, explicit lifecycle transitions, assignment, follow-ups, search/filter/sort/pagination, staff permission controls and append-only operational history. This is part of the existing Next.js application. The public website and enquiry schema are retained.
 
-Audit jobs, browser workers, screenshots, redesign generation, private demo sharing, outreach and client conversion are later phases. No prospect websites are fetched and no messages are sent by Phase 1.
+Baseline website audits are now available from each saved prospect. Apply `20261119094142_website_audits.sql` after the foundation migration. See [Website audits](website-audits.md) for usage, limits and verification. Browser workers, screenshots, redesign generation, private demo sharing, outreach and client conversion remain later phases. No messages are sent by the audit feature.
 
 ## Choose the correct project
 
-Use a separate ARA Supabase project in the organization selected by the founders. Do not apply these migrations to another application's database. The connected `our-table` project has not been modified. Creation of the ARA project is waiting for the requested different organization name or ID.
+The selected ARA Supabase project is `wjhvfimdetlgtlacrjbx`. The foundation and website-audit migrations have been applied to this project. Do not apply them to another application database. The earlier `our-table` project has not been modified.
 
 ## Apply the migration
 

@@ -6,6 +6,8 @@ import { randomUUID,randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { runAudit } from '../src/server/studio/audits.ts';
+import { AuditFailure } from '../src/server/studio/audit-network.ts';
 const database=new PGlite();const root=process.cwd();const appPort=4184,providerPort=4185;
 const origin=`http://127.0.0.1:${appPort}`;const userId=randomUUID(),sessionId=randomUUID();const password=randomBytes(24).toString('hex'),token=randomBytes(32).toString('hex');
 const logDirectory=path.join(root,'work');await fs.mkdir(logDirectory,{recursive:true});const log=await fs.open(path.join(logDirectory,'studio-e2e.log'),'w');
@@ -14,6 +16,7 @@ await database.exec(`create role anon;create role authenticated;create role serv
 create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
 create function auth.uid() returns uuid language sql stable as $$select (auth.jwt()->>'sub')::uuid$$;grant usage on schema auth to anon,authenticated,service_role;`);
 await database.exec(await fs.readFile(path.join(root,'supabase/migrations/20261119034827_studio_foundation.sql'),'utf8'));
+await database.exec(await fs.readFile(path.join(root,'supabase/migrations/20261119094142_website_audits.sql'),'utf8'));
 await database.query('insert into auth.users values($1)',[userId]);await database.query('insert into auth.sessions values($1,$2)',[sessionId,userId]);
 await database.query("insert into studio_users(auth_user_id,display_name,role) values($1,'Fixture Founder','admin')",[userId]);
 let revoked=false;
@@ -30,6 +33,12 @@ const provider=createServer(async(request,response)=>{
    if(url.pathname==='/rest/v1/studio_users'){const id=url.searchParams.get('auth_user_id')?.replace(/^eq\./,'');return (await tx.query('select id,auth_user_id,display_name,role,active from studio_users'+(id?' where auth_user_id=$1':''),id?[id]:[])).rows;}
    if(url.pathname==='/rest/v1/studio_activity_log'){const id=url.searchParams.get('entity_id')?.replace(/^eq\./,'');return(await tx.query('select * from studio_activity_log'+(id?' where entity_id=$1':'')+' order by created_at desc limit 50',id?[id]:[])).rows;}
    if(url.pathname==='/rest/v1/rpc/studio_dashboard')return(await tx.query('select studio_dashboard() result')).rows[0].result;
+   if(url.pathname==='/rest/v1/studio_audits'){
+    const id=url.searchParams.get('id')?.replace(/^eq\./,'');const prospect=url.searchParams.get('prospect_id')?.replace(/^eq\./,'');
+    if(request.method==='POST')return(await tx.query('insert into studio_audits(prospect_id,requested_by,website_url) values($1,$2,$3) returning *',[body.prospect_id,body.requested_by,body.website_url])).rows;
+    if(request.method==='PATCH')return(await tx.query("update studio_audits set status=$1,report=$2,error_message=$3 where id=$4 and status='running' returning *",[body.status,body.report?JSON.stringify(body.report):null,body.error_message||null,id])).rows;
+    return(await tx.query('select * from studio_audits'+(id?' where id=$1':prospect?' where prospect_id=$1':'')+' order by created_at desc limit 50',id?[id]:prospect?[prospect]:[])).rows;
+   }
    if(url.pathname==='/rest/v1/studio_prospects'){
     const columns=['business_name','website_url','normalized_domain','industry','country','city','contact_name','contact_email','contact_phone','social_links','business_description','source','priority','lifecycle_status','assigned_to','notes','follow_up_at','created_by'];
     const projection='*,to_char(updated_at at time zone \'UTC\',\'YYYY-MM-DD"T"HH24:MI:SS.US"Z"\') as updated_at';
@@ -64,9 +73,23 @@ try{
  assert.equal((await request('/studio/api/prospects/'+id,'PATCH',{...base,notes:'Stale fixture note',expected_updated_at:version},cookie)).status,409);
  const history=await database.query('select * from studio_activity_log where entity_id=$1',[id]);assert.equal(history.rows.length,2);assert.equal(history.rows[1].action,'stage_changed');assert.ok(!JSON.stringify(history.rows).includes('Verified fixture note'));
  const crossOrigin=await fetch(origin+'/studio/api/prospects',{method:'POST',headers:{origin:'https://other.test',cookie,'content-type':'application/json'},body:JSON.stringify(base)});assert.equal(crossOrigin.status,403);
+ assert.equal((await request('/studio/api/prospects/'+id+'/audits','POST',{})).status,401);
+ const blockedAudit=await fetch(origin+'/studio/api/prospects/'+id+'/audits',{method:'POST',headers:{origin:'https://other.test',cookie,'content-type':'application/json'},body:'{}'});assert.equal(blockedAudit.status,403);
+ assert.equal((await request('/studio/api/prospects/'+id+'/audits','POST',{website_url:'http://127.0.0.1/'},cookie)).status,400);
+ const staff=(await database.query('select id,auth_user_id,display_name,role,active from studio_users where auth_user_id=$1',[userId])).rows[0];
+ const auditSession={token,staff,config:{url:`http://127.0.0.1:${providerPort}`,key:'fixture-publishable-key'}};
+ const savedAudit=await runAudit(auditSession,id,async website=>({url:website,body:'<html lang="en"><title>Fixture beauty salon website</title><h1>Fixture salon</h1><img src="photo.jpg"></html>',status:200,headers:{'content-type':'text/html'},bytes:130,responseMs:100}));
+ assert.equal(savedAudit.status,'completed');assert.ok(savedAudit.report.findings.length>10);
+ const reportResponse=await request('/studio/audits/'+savedAudit.id,'GET',undefined,cookie);assert.equal(reportResponse.status,200);const reportHtml=await reportResponse.text();assert.ok(reportHtml.includes('Recommended next steps'));assert.ok(reportHtml.includes('Baseline HTML audit'));assert.ok(reportHtml.includes('Image alternatives'));assert.ok(!reportHtml.includes('Internal Server Error'));
+ const auditIndex=await(await request('/studio/audits','GET',undefined,cookie)).text();assert.ok(auditIndex.includes(savedAudit.id));
+ const auditedDetail=await(await request('/studio/prospects/'+id,'GET',undefined,cookie)).text();assert.ok(auditedDetail.includes('View audit report'));assert.ok(auditedDetail.includes('audit completed'));
+ await assert.rejects(()=>runAudit(auditSession,id,async()=>{throw new Error('Must not fetch twice');}),/recently/);
+ const second=await request('/studio/api/prospects','POST',{...base,business_name:'Failed audit fixture',website_url:'https://failed-audit-fixture.co.za/'},cookie);assert.equal(second.status,201);const secondId=(await second.json()).id;
+ const failed=await runAudit(auditSession,secondId,async()=>{throw new AuditFailure('robots_blocked','Crawler rules disallow this page.');});assert.equal(failed.status,'failed');
+ const failureHtml=await(await request('/studio/audits/'+failed.id,'GET',undefined,cookie)).text();assert.ok(failureHtml.includes('Crawler rules disallow'));assert.ok(failureHtml.includes('No successful report'));
  const publicHtml=await(await request('/')).text();assert.ok(!publicHtml.includes('Fixture Beauty'));assert.ok(!publicHtml.includes('href="/studio"'));
  if(process.argv.includes('--browser')){const {browserCheck}=await import('./studio-browser-check.mjs');await browserCheck({origin,email:'fixture-founder@example.com',password});}
  const logout=await request('/studio/auth/logout','POST',undefined,cookie);assert.equal(logout.status,303);assert.match(logout.headers.get('set-cookie'),/Max-Age=0/);await assertLoginRedirect(await request('/studio','GET',undefined,cookie));
- console.log('Studio end-to-end fixture passed: staff login, secure cookies, dashboard, create/edit/history, duplicate and stale writes, CSRF, private headers, public-page isolation, logout and revoked-session protection.');
+ console.log('Studio end-to-end fixture passed: login, CRUD/history, audit service persistence, saved report/list/detail pages, failure reports, duplicate-run protection, audit CSRF and input validation, private headers, public-page isolation and logout.');
  console.log('Provider: isolated Auth/REST fixtures. Database: actual migration in PGlite. No live Supabase or prospect website was contacted.');
 }finally{application?.kill();await new Promise(resolve=>provider.close(resolve));await database.close();await log.close();}

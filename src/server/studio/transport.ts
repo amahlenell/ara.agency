@@ -15,6 +15,7 @@ async function remote(config:StudioConfig,endpoint:string,token:string|null,init
   let response:Response;
   try{response=await fetcher(config.url+endpoint,{...init,cache:'no-store',signal:AbortSignal.timeout(8000),headers:{apikey:config.key,...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json',...init.headers}});}catch{throw new StudioError(503,'Studio could not connect to its database. Try again shortly.');}
   if(!response.ok){let code='';try{code=(await response.json()).code||'';}catch{}
+    if(code==='55P03')throw new StudioError(409,'An audit was started recently. Open its report or wait a minute before running another.');
     if(code==='23505')throw new StudioError(409,'A prospect with this website domain already exists. Open the existing record instead.');
     if(code==='40001')throw new StudioError(409,'This record changed while you were editing. Reload it before saving again.');
     if(code==='P0002')throw new StudioError(429,'Too many changes. Wait a minute before trying again.');

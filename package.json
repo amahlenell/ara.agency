@@ -14,7 +14,7 @@
     "lint": "eslint app components/ara src/server src/posts.ts",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "post:new": "node scripts/new-post.mjs",
-    "test:studio:e2e": "node scripts/test-studio.mjs"
+    "test:studio:e2e": "node --experimental-strip-types scripts/test-studio.mjs"
   },
   "dependencies": {
     "lucide-react": "1.66.0",
