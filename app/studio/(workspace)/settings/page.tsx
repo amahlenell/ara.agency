@@ -1,0 +1,5 @@
+import { notFound } from 'next/navigation';
+import { requireStudio } from '@/src/server/studio/context';
+import { staffList } from '@/src/server/studio/transport';
+import { StaffControls } from '@/components/studio/Forms';
+export default async function Settings(){const session=await requireStudio();if(session.staff.role!=='admin')notFound();const staff=await staffList(session);return <><div className="studio-page-heading"><div><span className="studio-kicker">Administration</span><h1>The right people. The right access.</h1><p>Staff membership controls every private page and database operation.</p></div></div><section className="studio-card"><h2>Staff access</h2><StaffControls members={staff}/></section><section className="studio-card"><h2>Provisioning</h2><p>New staff accounts are provisioned through Supabase Auth and the controlled setup procedure in <code>docs/studio-setup.md</code>. Public registration is not provided.</p><p>Audit workers, private screenshot storage and demo publishing are configured in later phases.</p></section></>;}
