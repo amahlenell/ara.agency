@@ -46,4 +46,4 @@ Set a valid `NEXT_PUBLIC_GA_ID` to enable the analytics consent controls. No ana
 
 Import this project using the Next.js preset; use the repository root as the root directory. The install command is `npm ci`, build command is `npm run build`, and the output directory uses Next's default. Use Node 22 or 24. Configure preview and production variables separately. Keep indexing disabled in previews. Do not commit secrets or replace an existing production project without checking its ownership and scope. There is no purchased domain assumed.
 
-The GitHub repository and final hosting target still need to be selected. This source can be committed to the chosen repository without recreating the design. Live Supabase, Turnstile, Resend and analytics configuration require verification before a public launch.
+The source repository is [amahlenell/ara.agency](https://github.com/amahlenell/ara.agency). The final hosting target still needs to be selected. Live Supabase, Turnstile, Resend and analytics configuration require verification before a public launch.

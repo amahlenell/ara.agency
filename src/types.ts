@@ -1,0 +1,1 @@
+export interface BlogPost { slug:string;title:string;category:string;summary:string;date:string;author:string;status:'published'|'draft';theme:string;readTime:string;answer:string;sections:{heading:string;paragraphs:string[]}[];sources:{title:string;url:string}[];relatedService:string; }

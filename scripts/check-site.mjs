@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { publicPaths } from '../src/pages.mjs';
+const posts=fs.readdirSync('content/posts').filter(x=>x.endsWith('.json')).map(x=>JSON.parse(fs.readFileSync('content/posts/'+x,'utf8'))).filter(x=>x.status==='published');
+const paths=publicPaths(posts);const titles=new Set();const links=new Set();const report=[];
+for(const path of paths){const response=await fetch('http://127.0.0.1:4173'+path);assert.equal(response.status,200,path);const html=await response.text();const title=html.match(/<title>([^<]*)<\/title>/)?.[1];assert.ok(title,path+' title');assert.ok(!titles.has(title),'Duplicate title: '+title);titles.add(title);assert.equal((html.match(/<h1\b/g)||[]).length,1,path+' h1 count');assert.ok(html.includes('name="description"'),path+' description');assert.ok(html.includes('rel="canonical"'),path+' canonical');const schema=html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];assert.ok(schema,path+' structured data');JSON.parse(schema);for(const match of html.matchAll(/href="(\/[^"#?]*)(?:[?#][^"]*)?"/g))links.add(match[1]);report.push({path,status:response.status,title});}
+for(const path of links){if(paths.includes(path)||path.startsWith('/_next/')||path==='/')continue;const r=await fetch('http://127.0.0.1:4173'+path);assert.ok(r.status<400,'Broken link: '+path+' '+r.status);}
+for(const [path,type] of [['/sitemap.xml','xml'],['/robots.txt','text/plain'],['/feed.xml','xml'],['/opengraph-image','image/png']]){const r=await fetch('http://127.0.0.1:4173'+path);assert.equal(r.status,200,path);assert.ok(r.headers.get('content-type').includes(type),path+' content type');}
+assert.equal((await fetch('http://127.0.0.1:4173/not-a-real-page')).status,404);
+fs.mkdirSync('work',{recursive:true});fs.writeFileSync('work/site-check.json',JSON.stringify(report,null,2));console.log('Verified '+paths.length+' pages: unique titles, descriptions, canonicals, structured data, one H1, internal links, SEO endpoints, PNG social image and 404.');
