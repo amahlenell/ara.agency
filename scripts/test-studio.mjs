@@ -19,6 +19,8 @@ await database.exec(await fs.readFile(path.join(root,'supabase/migrations/202611
 await database.exec(await fs.readFile(path.join(root,'supabase/migrations/20261119094142_website_audits.sql'),'utf8'));
 await database.query('insert into auth.users values($1)',[userId]);await database.query('insert into auth.sessions values($1,$2)',[sessionId,userId]);
 await database.query("insert into studio_users(auth_user_id,display_name,role) values($1,'Fixture Founder','admin')",[userId]);
+await database.exec("create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant select,insert,delete on storage.objects to authenticated;");
+for(const name of(await fs.readdir('supabase/migrations')).filter(name=>/_(studio_redesigns|studio_redesign_indexes|studio_outreach|studio_projects)\.sql$/.test(name)).sort())await database.exec(await fs.readFile('supabase/migrations/'+name,'utf8'));
 let revoked=false;
 const provider=createServer(async(request,response)=>{
  response.setHeader('content-type','application/json');const url=new URL(request.url,`http://127.0.0.1:${providerPort}`);
@@ -50,6 +52,7 @@ const provider=createServer(async(request,response)=>{
     }
     return(await tx.query(`select ${projection} from studio_prospects${id?' where id=$1':''} order by studio_prospects.updated_at desc limit 26`,id?[id]:[])).rows;
    }
+   if(['/rest/v1/studio_redesigns','/rest/v1/studio_outreach','/rest/v1/studio_outreach_preferences','/rest/v1/studio_projects'].includes(url.pathname))return [];
    throw new Error('Unsupported fixture endpoint');
   });response.end(JSON.stringify(result));
  }catch(error){if(error.code!=='23505')console.error('Fixture provider:',url.pathname,error.message);response.statusCode=error.code==='23505'?409:error.code==='42501'?403:400;response.end(JSON.stringify({code:error.code||'fixture_error'}));}

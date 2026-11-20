@@ -1,17 +1,9 @@
 import { z } from 'zod';
 import { isIP } from 'node:net';
 
-export const stages = ['discovered','researching','audited','demo_in_progress','demo_ready','contacted','replied','meeting_booked','proposal_sent','won','lost','archived'] as const;
-export type Stage = typeof stages[number];
-export const transitions: Record<Stage, readonly Stage[]> = {
-  discovered:['researching','archived'], researching:['discovered','audited','archived'],
-  audited:['researching','demo_in_progress','archived'], demo_in_progress:['audited','demo_ready','archived'],
-  demo_ready:['demo_in_progress','contacted','archived'], contacted:['replied','lost','archived'],
-  replied:['meeting_booked','proposal_sent','lost','archived'], meeting_booked:['replied','proposal_sent','lost','archived'],
-  proposal_sent:['meeting_booked','won','lost','archived'], won:['archived'], lost:['researching','archived'], archived:['discovered'],
-};
-export const stageLabel = (value:string) => value.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
-export function assertTransition(before:Stage,after:Stage){if(before!==after&&!transitions[before].includes(after))throw new Error('This lifecycle transition is not allowed.');}
+import { stages } from './stages.ts';
+export { stages, transitions, stageLabel, assertTransition } from './stages.ts';
+export type { Stage } from './stages.ts';
 
 export function normalizeWebsite(value:string){
   const url=new URL(value.trim());
@@ -38,6 +30,6 @@ export function parseProspect(input:unknown){const fields=prospectSchema.parse(i
 export type ProspectInput=ReturnType<typeof parseProspect>;
 export type Staff={id:string;auth_user_id:string;display_name:string;role:'admin'|'editor';active:boolean};
 export type Prospect=ProspectInput & {id:string;created_at:string;updated_at:string;created_by:string};
-export type Activity={id:string;entity_type:string;entity_id:string;action:string;actor_user_id:string|null;previous_state:Record<string,unknown>|null;new_state:Record<string,unknown>|null;metadata:{changed_fields?:string[]};created_at:string};
+export type Activity={id:string;entity_type:string;entity_id:string;action:string;actor_user_id:string|null;previous_state:Record<string,unknown>|null;new_state:Record<string,unknown>|null;metadata:{changed_fields?:string[];redesign_id?:string;outreach_id?:string;project_id?:string;revision?:number};created_at:string};
 export function canManageStaff(staff:Staff|null){return staff?.active===true&&staff.role==='admin';}
 export const bodySphere = {business_name:'Body Sphere Beauty',website_url:'https://www.bodyspherebeauty.co.za/',industry:'Beauty & Wellness',country:'South Africa'};

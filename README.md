@@ -4,7 +4,7 @@ An SEO and GEO focused agency website for South Africa and New Zealand. The impl
 
 ## Stack and layout
 
-The private staff workspace starts at `/studio`. Phase 1 adds staff authentication, role-controlled prospect management and transactional activity history. See [Studio setup](docs/studio-setup.md) and the [implementation plan](docs/studio-implementation.md). Missing configuration fails closed; auditing, redesigns, previews and outreach are later phases.
+The private staff workspace starts at `/studio`. It includes staff authentication, prospects, activity history, baseline HTML website audits and Phase 3 Redesigns: a Beauty Salon editor, manual screenshot comparison, administrator review and approved private demos. See [Studio setup](docs/studio-setup.md), [Redesigns](docs/studio-redesigns.md) and the [implementation plan](docs/studio-implementation.md). Phase 4 adds [reviewed outreach, manual sending records, follow-ups and pipeline](docs/studio-outreach.md). Missing configuration fails closed. Phase 5 adds admin-approved conversion of won prospects and an internal project workspace for delivery. Automatic screenshots remain future work.
 
 Next.js App Router, React, TypeScript, Tailwind CSS, Motion, Lucide and Zod. Page content is server-rendered and prebuilt from shared presentation templates. The templates in `src/pages.mjs`, `src/ui.mjs` and `src/content.mjs` retain the design work; Next owns routing, metadata, image generation and the enquiry endpoint. Browser demos use a small progressive enhancement script in `public/client.js`. The server uses Supabase's REST API with a server-only service-role key. No paid AI APIs are used.
 

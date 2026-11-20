@@ -11,10 +11,15 @@
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 4173",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint app components/ara src/server src/posts.ts",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "lint": "eslint app components/ara components/studio/redesigns components/studio/outreach components/studio/ProjectForm.tsx src/server src/posts.ts",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 tests/*.test.ts",
     "post:new": "node scripts/new-post.mjs",
-    "test:studio:e2e": "node --experimental-strip-types scripts/test-studio.mjs"
+    "test:studio:e2e": "node --experimental-strip-types scripts/test-studio.mjs",
+    "test:redesigns:e2e": "node --experimental-strip-types scripts/test-redesigns.mjs",
+    "test:outreach:e2e": "node --experimental-strip-types scripts/test-redesigns.mjs --outreach",
+    "test:projects:e2e": "node --experimental-strip-types scripts/test-redesigns.mjs --projects",
+    "dev:preview": "node scripts/studio-preview.mjs",
+    "studio:doctor": "node scripts/studio-doctor.mjs"
   },
   "dependencies": {
     "lucide-react": "1.66.0",

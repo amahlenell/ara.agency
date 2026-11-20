@@ -12,7 +12,7 @@ Execution runs within the server request rather than a durable background worker
 
 ## Local operation
 
-This checkout is `C:\Users\amyne\Documents\Codex\2026-11-19\new-chat-7\ara.agency`. Its ignored `.env.local` contains the selected Supabase URL, publishable key and exact local origin. Run `npm run dev`, or `npm run build` followed by `npm start`, then open `http://127.0.0.1:4173/studio`. The process requires outbound HTTPS access to Supabase and direct HTTP/HTTPS access to the audited website. A restrictive development sandbox can prevent live requests even when isolated tests pass. No service-role key is needed for Studio audits.
+Open a terminal in the project directory. Its ignored `.env.local` contains the selected Supabase URL, publishable key and exact local origin. Run `npm run dev`, or `npm run build` followed by `npm start`, then open `http://127.0.0.1:4173/studio`. The process requires outbound HTTPS access to Supabase and direct HTTP/HTTPS access to the audited website. A restrictive development sandbox can prevent live requests even when isolated tests pass. No service-role key is needed for Studio audits.
 
 The older Studio process on port 4173 could not be stopped by the task because Windows returned access denied. An updated production preview was started on port 4174 with a matching `STUDIO_ORIGIN` process override. To switch the usual address to this checkout, stop the old server in its terminal (Ctrl+C), open PowerShell in this checkout and run `npm run dev`. Starting it from the user terminal also gives the app the normal user network context rather than the restricted task context.
 

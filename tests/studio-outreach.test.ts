@@ -1,0 +1,15 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {parseProspect} from '../src/server/studio/domain.ts';
+import {buildOutreachDraft,outreachContentSchema,outreachReadiness,selectedEvidence,pipelineFiltersSchema} from '../src/server/studio/outreach-content.ts';
+import {pipelinePatchSchema} from '../src/server/studio/outreach.ts';
+import {previewReport} from '../src/server/studio/preview-report.ts';
+import type {Prospect} from '../src/server/studio/domain.ts';
+import type {Audit} from '../src/server/studio/audits.ts';
+const prospect={...parseProspect({business_name:'Fixture salon',website_url:'https://example.com/',industry:'Beauty',country:'South Africa'}),id:'11111111-1111-4111-8111-111111111111'} as Prospect;
+const audit={id:'22222222-2222-4222-8222-222222222222',prospect_id:prospect.id,website_url:prospect.website_url,status:'completed',report:previewReport} as Audit;
+const ids=previewReport.findings.filter(item=>item.status==='warning').slice(0,2).map(item=>item.id);
+test('outreach uses only selected saved observations and leaves an unknown recipient empty',()=>{const body=buildOutreachDraft(prospect,audit,ids,'Fixture sender');assert.equal(body.recipient,'');assert.deepEqual(body.finding_ids,ids);for(const finding of selectedEvidence(audit,ids,prospect))assert.ok(body.body.includes(finding.evidence));assert.match(outreachReadiness(body)[0],/recipient/);assert.ok(!body.body.includes('guaranteed'));});
+test('only completed current-site warning findings are usable',()=>{assert.throws(()=>selectedEvidence({...audit,status:'failed'},ids,prospect));assert.throws(()=>selectedEvidence({...audit,website_url:'https://other.example.com/'},ids,prospect));assert.throws(()=>selectedEvidence(audit,[ids[0],ids[0]],prospect));const other=previewReport.findings.find(item=>item.status!=='warning');if(other)assert.throws(()=>selectedEvidence(audit,[other.id],prospect));});
+test('saved drafts reject private preview credentials, extra fields and oversized copy',()=>{const body=buildOutreachDraft(prospect,audit,ids,'Fixture sender');assert.equal(outreachContentSchema.safeParse({...body,html:'<img onerror=alert(1)>'}).success,false);assert.equal(outreachContentSchema.safeParse({...body,body:'https://studio.example.com/preview/11111111-1111-4111-8111-111111111111#'+'a'.repeat(43)}).success,false);assert.equal(outreachContentSchema.safeParse({...body,body:'a'.repeat(8001)}).success,false);assert.equal(outreachReadiness({...body,recipient:'person@example.com'}).length,0);});
+test('pipeline patches are partial, revision guarded and cannot overwrite notes or escalate access',()=>{assert.deepEqual(pipelinePatchSchema.parse({expected_updated_at:'2026-11-20T12:00:00.123456Z',priority:'high'}),{expected_updated_at:'2026-11-20T12:00:00.123456Z',priority:'high'});assert.equal(pipelinePatchSchema.safeParse({expected_updated_at:'2026-11-20T12:00:00Z',notes:'lost data'}).success,false);assert.equal(pipelinePatchSchema.safeParse({priority:'high'}).success,false);assert.equal(pipelineFiltersSchema.safeParse({owner:'not-a-user'}).success,false);assert.equal(pipelineFiltersSchema.safeParse({page:0}).success,false);});

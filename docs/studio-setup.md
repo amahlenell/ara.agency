@@ -1,14 +1,14 @@
-# ARA Studio: staff workspace and website audits
+# ARA Studio: staff workspace, audits and redesigns
 
 ## What is implemented
 
 Staff sign-in/out, session validation, active admin/editor membership, protected dashboard, prospect creation/editing/archiving, domain deduplication, explicit lifecycle transitions, assignment, follow-ups, search/filter/sort/pagination, staff permission controls and append-only operational history. This is part of the existing Next.js application. The public website and enquiry schema are retained.
 
-Baseline website audits are now available from each saved prospect. Apply `20261119094142_website_audits.sql` after the foundation migration. See [Website audits](website-audits.md) for usage, limits and verification. Browser workers, screenshots, redesign generation, private demo sharing, outreach and client conversion remain later phases. No messages are sent by the audit feature.
+Baseline website audits are now available from each saved prospect. Apply `20261119094142_website_audits.sql` after the foundation migration. See [Website audits](website-audits.md) for usage, limits and verification. Phase 3 adds a Beauty Salon editor, manual screenshot comparison, administrator review and approved private demos; see [Redesigns](studio-redesigns.md). Phase 4 adds [Outreach and Pipeline](studio-outreach.md), including administrator review, manual contact records, paused contacts and follow-ups. Phase 5 adds client projects. Automatic screenshots remain future work.
 
 ## Choose the correct project
 
-The selected ARA Supabase project is `wjhvfimdetlgtlacrjbx`. The foundation and website-audit migrations have been applied to this project. Do not apply them to another application database. The earlier `our-table` project has not been modified.
+The selected ARA Supabase project is `<ara-project-ref>`. The foundation, website-audit, redesign, outreach and client project migrations have been applied to this project. Do not apply them to another application database. The earlier `our-table` project has not been modified.
 
 ## Apply the migration
 
@@ -39,7 +39,26 @@ STUDIO_ORIGIN=http://127.0.0.1:4173
 
 The public enquiry integration may still need its existing `SUPABASE_SERVICE_ROLE_KEY` and provider configuration. Studio's normal database requests use the signed-in user's access token and publishable key, so RLS applies; Studio does not use the service-role key. Never expose a service-role key through a `NEXT_PUBLIC_` variable.
 
-Run `npm ci` then `npm run dev`. Open `/studio/login`. A missing configuration displays a setup notice and grants no access. There is no local authentication bypass or production mock store. Add Body Sphere Beauty from the dashboard's first-prospect action, review the four supplied fields, then create it. Unknown contact details remain empty.
+Run `npm ci` then `npm run dev`. Open `/studio/login`. A missing configuration displays a setup notice and grants no live access. Add Body Sphere Beauty from the dashboard's first-prospect action, review the four supplied fields, then create it. Unknown contact details remain empty.
+
+On Windows, double-click `Start-Studio.cmd` in the project folder. Keep that terminal window open while using Studio. To restart, close the previous Studio server window and open the launcher again. Launching from a normal user terminal gives the app that terminal's network settings and avoids depending on the agent workspace remaining connected. The login page still needs a successful Supabase connection to authenticate real staff.
+
+### Explore without signing in
+
+Run `npm run dev:preview`, then open `http://127.0.0.1:4173/studio`. This starts a read-only local preview with three fictional prospects and a sample audit of embedded example HTML. It does not read or write Supabase, fetch a live company website, or demonstrate a working live database connection. The dashboard, filters, prospect details, audit findings and settings can be inspected; saving, staff changes and live audits are disabled and rejected by the server.
+
+The preview flag applies only to this development process, which binds to `127.0.0.1`. Access also requires an exact loopback Host matching `STUDIO_ORIGIN`; production and test modes reject it. Stop the preview and run `npm run dev` to return to normal staff sign-in. No password or bypass token is stored in a browser cookie.
+
+### Troubleshooting staff sign-in
+
+Use the email and password of the provisioned Studio Auth user. Email is trimmed and normalized to lowercase; passwords are preserved exactly. A valid provider session still requires active Studio membership before a session cookie is issued.
+
+- `401`: Supabase explicitly rejected the login credentials. Check the Studio staff email and password.
+- `403`: An email confirmation, account restriction, staff permission or request-origin check prevented access.
+- `429`: Sign-in is rate-limited; wait before trying again.
+- `503`: Studio could not reach Auth, the service failed, the response was invalid, or provider configuration needs attention. These failures are not described as a wrong password, and raw provider details are not exposed.
+
+Connection checks with fictional invalid credentials confirm only provider reachability and failure handling. A real staff member must enter their own password in the Studio form to verify successful sign-in; no password is stored in this repository or diagnostic logs.
 
 ## Session behavior
 
@@ -61,6 +80,6 @@ For the optional browser form/layout check, run `npm run test:studio:e2e -- --br
 
 Deploy the existing Next.js app to a server-capable host (for example its documented Vercel Next.js setup). Static GitHub Pages cannot run the authentication or database handlers. Set the same Supabase variables and the exact production HTTPS `STUDIO_ORIGIN` in the host, provision staff, apply/review the migration and run security advisors against the selected ARA project before enabling operational use. Keep preview and production configurations separate. No browser worker or additional paid service is required for Phase 1.
 
-## Body Sphere Beauty milestone status
+## Current workspace status
 
-The known business is available as a prefilled creation form: Body Sphere Beauty, `https://www.bodyspherebeauty.co.za/`, Beauty & Wellness, South Africa. No real prospect record has been claimed as saved before a database is connected. No website audit, screenshot, redesign, demo, email or client agreement exists from this implementation. The next phase is the isolated audit queue and evidence review after the secure foundation has been verified against the selected live project.
+The selected ARA project is connected and retains existing staff, prospect and audit data. Phase 3 adds [Redesigns](studio-redesigns.md): a Beauty Salon editor, manual screenshot comparison, review and private approved snapshots. Open `/studio/redesigns`, or start from a prospect. Implementation tests use fictional fixtures rather than modifying real prospects. No client message or agreement is created automatically. Outreach and pipeline are available in Phase 4. Phase 5 adds client projects for won prospects. Open the prospect to review and confirm conversion, or use Projects to track delivery.
