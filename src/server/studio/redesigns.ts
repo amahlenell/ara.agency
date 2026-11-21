@@ -1,8 +1,10 @@
+import { AuditFailure, fetchAuditPage } from './audit-network.ts';
+import { draftFromWebsite } from './redesign-source.ts';
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { database, getProspect, studioConfig, StudioError } from './transport.ts';
 import type { StudioSession, StudioConfig } from './transport.ts';
-import { approvalIssues, newRedesignContent, redesignContentSchema, redesignTemplate } from './redesign-content.ts';
+import { approvalIssues, redesignContentSchema, redesignTemplate } from './redesign-content.ts';
 import type { Redesign, RedesignContent, RedesignDemo, SharedRedesign } from './redesign-content.ts';
 
 const demoColumns = 'id,redesign_id,revision,expires_at,revoked_at,created_by,created_at';
@@ -25,7 +27,19 @@ export async function createRedesign(session: StudioSession, prospectId: string)
   const prospect = await getProspect(session, prospectId);
   if (!prospect) throw new StudioError(404, 'This prospect was not found.');
   if (prospect.lifecycle_status === 'archived') throw new StudioError(409, 'Restore this prospect before creating a redesign.');
-  return command(session, prospectId, 'create', 0, { p_content: newRedesignContent(prospect) });
+  let page;
+  try {
+    page = await fetchAuditPage(prospect.website_url);
+  } catch (error) {
+    throw new StudioError(422, error instanceof AuditFailure ? error.message : 'Studio could not read the saved website. Check the URL and try again.');
+  }
+  let content;
+  try {
+    content = draftFromWebsite(prospect, page);
+  } catch {
+    throw new StudioError(422, 'The site did not provide enough readable HTML. Try a public page that shows the business content directly.');
+  }
+  return command(session, prospectId, 'create', 0, { p_content: content, p_note: prospect.website_url });
 }
 export async function saveRedesign(session: StudioSession, id: string, revision: number, content: RedesignContent) {
   return command(session, z.uuid().parse(id), 'save', z.number().int().positive().parse(revision), { p_content: redesignContentSchema.parse(content) });

@@ -25,6 +25,7 @@ await db.exec(`create role anon;create role authenticated;create role service_ro
 for (const name of ['20261119034827_studio_foundation.sql', '20261119094142_website_audits.sql']) await db.exec(await fs.readFile('supabase/migrations/' + name, 'utf8'));
 const phase3 = (await fs.readdir('supabase/migrations')).find(name => name.endsWith('_studio_redesigns.sql'));
 await db.exec(await fs.readFile(phase3 ? 'supabase/migrations/' + phase3 : 'work/studio-redesigns.sql', 'utf8'));
+await db.exec(await fs.readFile("supabase/migrations/20261121021603_studio_site_redesigns.sql","utf8"));
 for (const name of (await fs.readdir('supabase/migrations')).filter(name => name.endsWith('_studio_redesign_indexes.sql'))) await db.exec(await fs.readFile('supabase/migrations/' + name, 'utf8'));
 {const name=(await fs.readdir('supabase/migrations')).find(name=>name.endsWith('_studio_outreach.sql'));await db.exec(await fs.readFile(name?'supabase/migrations/'+name:'work/studio-outreach.sql','utf8'));}
 { const name=(await fs.readdir('supabase/migrations')).find(name=>name.endsWith('_studio_projects.sql')); await db.exec(await fs.readFile(name?'supabase/migrations/'+name:'work/studio-projects.sql','utf8')); }
@@ -92,7 +93,11 @@ try {
   assert.equal((await request('/studio/api/redesigns', 'POST', { prospect_id: prospect.id })).status, 401);
   const login = await request('/studio/auth/login', 'POST', { email: 'redesign-qa@example.com', password }); await json(login, 200); const cookie = login.headers.get('set-cookie').split(';')[0];
   assert.match(login.headers.get('set-cookie'), /HttpOnly/i); assert.match(login.headers.get('set-cookie'), /SameSite=strict/i);
-  let design = (await json(await request('/studio/api/redesigns', 'POST', { prospect_id: prospect.id }, cookie), 201)).redesign;
+  // Seed a legacy draft so this isolated check does not fetch a real company website.
+  let design = (await authenticated(tx => tx.query(
+    "select studio_redesign_command($1,'create',0,$2) result",
+    [prospect.id, JSON.stringify(newRedesignContent(prospect))],
+  ))).rows[0].result;
   const base = '/studio/api/redesigns/' + design.id;
   const content = newRedesignContent(prospect); content.hero.body = 'A thoughtful approach to beauty, with room to slow down and feel yourself.'; content.about.body = 'Fictional content for acceptance testing. A welcoming studio with a personal approach to every appointment.';
   content.services = [{ name: 'Consultation', description: 'Example service for the test fixture.', price: '' }]; content.contact.email = 'hello@example.com';

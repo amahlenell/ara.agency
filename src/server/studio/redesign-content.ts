@@ -17,7 +17,7 @@ const publicBookingUrl = z.union([z.literal(''), z.url().max(2048).refine(value 
 }, 'Use a public HTTPS booking URL without credentials.')]).transform(value => value ? new URL(value).href : '');
 export function safeBookingLink(value: string) { const parsed = publicBookingUrl.safeParse(value); return parsed.success && parsed.data ? parsed.data : null; }
 export const redesignContentSchema = z.object({
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   brand: z.object({ name: text(180).min(2), tagline: text(100), palette: z.enum(['sage', 'rose', 'midnight']), art: z.enum(['petal', 'arch', 'none']) }).strict(),
   hero: z.object({ eyebrow: text(70), heading: text(120).min(3), body: text(600), cta: text(40).min(2) }).strict(),
   services: z.array(z.object({ name: text(80).min(1), description: text(400), price: text(60) }).strict()).max(12),
@@ -29,8 +29,8 @@ export type RedesignContent = z.infer<typeof redesignContentSchema>;
 export function approvalIssues(content: RedesignContent) {
   const issues: string[] = [];
   if (content.hero.body.length < 20) issues.push('Add an introduction of at least 20 characters.');
-  if (!content.services.length) issues.push('Add at least one real service.');
-  if (content.about.body.length < 20) issues.push('Add an about section of at least 20 characters.');
+  if (content.version === 1 && !content.services.length) issues.push('Add at least one real service.');
+  if (content.version === 1 && content.about.body.length < 20) issues.push('Add an about section of at least 20 characters.');
   if (!content.contact.email && !content.contact.phone && !content.contact.bookingUrl) issues.push('Add a verified email, phone number or booking link.');
   return issues;
 }

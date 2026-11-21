@@ -28,6 +28,8 @@ test('redesign permissions, review states, snapshots, private files and capabili
     const phase3 = fs.readdirSync(migrationRoot).find(name => name.endsWith('_studio_redesigns.sql'));
     await db.exec(fs.readFileSync(phase3 ? new URL(phase3, migrationRoot) : path.resolve('work/studio-redesigns.sql'), 'utf8'));
     for (const name of fs.readdirSync(migrationRoot).filter(name => name.endsWith('_studio_redesign_indexes.sql'))) await db.exec(fs.readFileSync(new URL(name, migrationRoot), 'utf8'));
+    const siteMigration = fs.readdirSync(migrationRoot).find(name => name.endsWith('_studio_site_redesigns.sql'));
+    await db.exec(fs.readFileSync(siteMigration ? new URL(siteMigration, migrationRoot) : path.resolve('work/studio_site_redesigns.sql'), 'utf8'));
     await db.exec(`insert into studio_users(auth_user_id,display_name,role) values('${admin}','Fixture admin','admin'),('${editor}','Fixture editor','editor');`);
     const asUser = async (user: string | null) => { await db.exec('reset role'); await db.query("select set_config('request.jwt.claims',$1,false)", [user ? JSON.stringify({ sub: user, session_id: sessions[user] }) : '{}']); await db.exec(user ? 'set role authenticated' : 'set role anon'); };
     await asUser(admin);
@@ -52,6 +54,14 @@ test('redesign permissions, review states, snapshots, private files and capabili
         await assert.rejects(() => command(design.id, 'save', 1, invalid), /invalid_redesign_content/);
       }
       await assert.rejects(() => command(design.id, 'submit', 1), /redesign_not_ready/);
+    });
+    await t.test('site-based drafts require the current URL and can be reviewed without a salon service menu', async () => {
+      const siteContent = { ...content, version: 2, hero: { ...content.hero, body: 'This is the introduction observed on the business website.' }, contact: { ...content.contact, email: 'team@example.com' } };
+      await assert.rejects(() => command(prospect, 'create', 0, siteContent, 'https://old-site.co.za/'), /stale_prospect_website/);
+      const site = await command(prospect, 'create', 0, siteContent, design.original_url);
+      assert.equal(site.content.version, 2);
+      await command(site.id, 'submit', 1);
+      assert.equal((await command(site.id, 'approve', 1, null, '', null, true)).status, 'approved');
     });
     await t.test('editors can prepare and submit, while stale writes cannot overwrite newer copy', async () => {
       await asUser(editor);

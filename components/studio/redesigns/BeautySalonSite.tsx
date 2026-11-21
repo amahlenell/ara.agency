@@ -2,8 +2,10 @@ import type { CSSProperties } from 'react';
 import { redesignPalettes, safeBookingLink } from '@/src/server/studio/redesign-content';
 import type { RedesignContent } from '@/src/server/studio/redesign-content';
 import './beauty-salon.css';
+import { SourceWebsite } from './SourceWebsite';
 
 export function BeautySalonSite({ content, draft = false }: { content: RedesignContent; draft?: boolean }) {
+  if (content.version === 2) return <SourceWebsite content={content} draft={draft}/>;
   const palette = redesignPalettes[content.brand.palette] || redesignPalettes.sage;
   const style = { '--beauty-ink': palette.ink, '--beauty-paper': palette.paper, '--beauty-accent': palette.accent, '--beauty-soft': palette.soft } as CSSProperties;
   const phone = content.contact.phone.replace(/[^\d+]/g, '');

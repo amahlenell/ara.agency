@@ -1,16 +1,18 @@
 # Phase 3: Redesigns
 
-ARA Studio includes a structured Beauty Salon template, draft editing, original screenshot comparison, administrator review and private demo links. All routes live in the existing Next.js app. There is no AI provider, new subscription or separate application.
+ARA Studio reads the prospect’s saved website page to create an editable concept. It also supports screenshot comparison, administrator review and private demo links.
 
 ## Using the workspace
 
-1. Open `/studio/redesigns` or the Redesigns section of a prospect workspace. Choose **New redesign**, select a saved prospect and explicitly create the draft. GET requests never create records.
-2. Edit the identity, introduction, services, about copy, contact details and page metadata. Choose Sage, Rose or Midnight colours and abstract artwork. The canvas updates immediately; **Save draft** persists a numbered revision. Open the saved preview to inspect persisted content without the sidebar.
+1. Open `/studio/redesigns` or the Redesigns section of a prospect workspace. Choose **New redesign**, select a saved prospect and choose **Read website and create draft**.
+2. Edit the identity, introduction, services, about copy, contact details and page metadata. Choose Sage, Rose or Midnight colours. Abstract artwork applies to earlier Beauty Salon drafts. The canvas updates immediately; **Save draft** persists a numbered revision. Open the saved preview to inspect persisted content without the sidebar.
 3. Upload an original screenshot for before/after comparison. PNG, JPEG and WebP are accepted, up to 5 MB. Capture is manual; no automatic screenshot worker is claimed. The reference remains private to active staff and is excluded from shared demos.
-4. Save edits and **Submit for review**. Introduction/about copy, at least one named service and a contact method are required. An administrator reviews the content and contact links, then approves or requests changes with a note.
+4. Save edits and **Submit for review**. A site-based draft needs an introduction and a verified contact method. Earlier Beauty Salon drafts also require an about section and at least one named service. An administrator reviews the content and contact links, then approves or requests changes with a note.
 5. An administrator can create a private link for one, three or seven days. Copy the complete link when created: its secret is displayed only once. Revoke it from the editor when needed. Each redesign allows at most ten active links.
 
-New drafts use supplied business details; unknown services, prices, hours and contacts stay empty. The template gallery is fictional. Check business claims and contact destinations before approval. The concept has no booking form, payment flow, arbitrary HTML, uploaded scripts, custom CSS or public publish button. Nothing is sent automatically.
+The import uses the saved page’s readable HTML. It matches headings, introduction, offerings and about sections, declared theme colour, and contact links when present. For services, headings inside a recognised offerings section work best. The layout changes depending on how many offerings are available. Missing details can be added in the editor. Check imported wording and contact destinations before approval.
+
+The importer reads one page and does not render JavaScript, crawl linked pages or import original imagery. If a page returns too little readable content, try a public page on that site that contains the business information. Earlier Beauty Salon drafts and approved snapshots still use their original renderer.
 
 ## Revisions and review
 
