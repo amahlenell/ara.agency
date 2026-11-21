@@ -1,0 +1,17 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { z } from 'zod';
+import { requireStudio } from '@/src/server/studio/context';
+import { getProspect, listProspects } from '@/src/server/studio/transport';
+import { CreateRedesignButton } from '@/components/studio/redesigns/CreateRedesignButton';
+export default async function NewRedesign({ searchParams }: { searchParams: Promise<{prospect?:string;q?:string;page?:string}> }) {
+  const session = await requireStudio(); const params = await searchParams;
+  if (params.prospect) {
+    if (!z.uuid().safeParse(params.prospect).success) notFound();
+    const prospect = await getProspect(session, params.prospect); if (!prospect) notFound();
+    return <><Link className="studio-text-link" href="/studio/redesigns/new">Choose another prospect</Link><div className="studio-page-heading"><div><span className="studio-kicker">Website redesign</span><h1>Start with the business.</h1><p>A structured concept for {prospect.business_name}, ready for your copy and review.</p></div></div><section className="studio-card"><h2>{prospect.business_name}</h2><p>{prospect.industry} · {prospect.country}</p><p><a className="studio-text-link" href={prospect.website_url} target="_blank" rel="noreferrer">Open the original website ↗</a></p><p>Studio reads the saved website page and uses its visible headings, copy, offerings, contact links and declared theme colour where available. Review the imported details before sharing.</p>{prospect.lifecycle_status === 'archived' && <p className="studio-error">Restore this prospect before creating a redesign.</p>}<CreateRedesignButton prospectId={prospect.id} disabled={!!session.preview || prospect.lifecycle_status === 'archived'}/></section></>;
+  }
+  const result = await listProspects(session, { q: params.q || '', sort: 'name', page: Math.max(1, Number.parseInt(params.page || '') || 1) });
+  const next = '/studio/redesigns/new?' + new URLSearchParams({ q: params.q || '', page: String(result.page + 1) });
+  return <><div className="studio-page-heading"><div><span className="studio-kicker">New redesign</span><h1>Choose the opportunity.</h1><p>Start from a saved prospect. Studio creates a draft from the saved website.</p></div><Link className="studio-button studio-button-secondary" href="/studio/prospects/new">Add a prospect</Link></div><form className="redesign-search" method="get"><label>Find a business<input name="q" defaultValue={params.q || ''} maxLength={80} placeholder="Business name or website domain"/></label><button className="studio-button studio-button-secondary">Search prospects</button></form>{result.rows.map(prospect => <article className="studio-card redesign-prospect-choice" key={prospect.id}><div><h2>{prospect.business_name}</h2><p>{prospect.industry} · {prospect.country} · {prospect.normalized_domain}</p></div><Link className="studio-button studio-button-secondary" href={'/studio/redesigns/new?prospect=' + prospect.id}>Choose prospect →</Link></article>)}{!result.rows.length && <section className="studio-card studio-empty"><h2>No prospects match this search.</h2><p>Add a prospect or try another business name.</p></section>}<nav className="studio-pagination" aria-label="Prospect selection pages">{result.page > 1 && <Link href={'/studio/redesigns/new?' + new URLSearchParams({ q: params.q || '', page: String(result.page - 1) })}>Previous</Link>}<span>Page {result.page}</span>{result.more && <Link href={next}>Next</Link>}</nav></>;
+}

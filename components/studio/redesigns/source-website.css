@@ -1,0 +1,23 @@
+.source-canvas { container-type: inline-size; min-width: 0; }
+.source-site { background: var(--source-paper); color: var(--source-ink); font: 400 1rem/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+.source-site a { color: inherit; }
+.source-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; padding: 1.25rem 7%; border-bottom: 1px solid currentColor; }
+.source-nav > a { font-weight: 750; text-decoration: none; }
+.source-nav nav { display: flex; flex-wrap: wrap; gap: 1rem; font-size: .88rem; }
+.source-hero { display: grid; gap: 1.5rem; padding: clamp(2rem, 9cqi, 6rem) 7%; background: var(--source-soft); }
+.source-hero h1 { margin: 0; font-size: clamp(2rem, 7cqi, 4.75rem); line-height: 1.05; letter-spacing: -.055em; }
+.source-hero p { max-width: 58ch; margin: 0 0 1rem; }
+.source-eyebrow { font-weight: 700; }
+.source-button { display: inline-block; padding: .7rem 1rem; color: var(--source-paper) !important; background: var(--source-ink); text-decoration: none; }
+.source-section { padding: 2.5rem 7%; }
+.source-section h2 { margin: 0 0 .8rem; font-size: clamp(1.35rem, 4cqi, 2.5rem); }
+.source-section p { margin: .4rem 0; max-width: 65ch; }
+.source-offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
+.source-offers > div { border: 1px solid currentColor; padding: 1rem; }
+.source-offers h3 { margin: 0; font-size: 1.08rem; }
+.source-about { border-top: 1px solid currentColor; }
+.source-contact { background: var(--source-ink); color: var(--source-paper); }
+.source-site footer { padding: 1rem 7%; font-size: .85rem; }
+@container (min-width: 550px) {
+  .source-offer-first { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: end; }
+}

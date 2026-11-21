@@ -1,0 +1,2 @@
+'use client';
+export default function StudioError({reset}:{reset:()=>void}){return <section className="studio-card"><h1>Studio couldn’t load this view.</h1><p>Check the database connection and setup, or try again. Your records have not been replaced with sample data.</p><div className="studio-actions"><button className="studio-button" onClick={reset}>Try again</button><a className="studio-button studio-button-secondary" href="/studio/login">Sign in again</a></div></section>;}

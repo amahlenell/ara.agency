@@ -38,6 +38,7 @@
     "app/**/*.ts",
     "app/**/*.tsx",
     "components/ara/**/*.tsx",
+    "components/studio/**/*.tsx",
     "src/server/**/*.ts",
     "src/posts.ts",
     "src/types.ts",

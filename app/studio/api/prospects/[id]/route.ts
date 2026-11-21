@@ -1,0 +1,7 @@
+import { z } from 'zod';
+import { apiSession } from '@/src/server/studio/context';
+import { parseProspect,assertTransition } from '@/src/server/studio/domain';
+import type { Prospect } from '@/src/server/studio/domain';
+import { database,getProspect,StudioError } from '@/src/server/studio/transport';
+import { jsonBody,apiError } from '@/src/server/studio/http';
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){try{const session=await apiSession();const {id}=await params;z.uuid().parse(id);const {expected_updated_at,...input}=z.object({expected_updated_at:z.iso.datetime({offset:true})}).loose().parse(await jsonBody(request));const current=await getProspect(session,id);if(!current)throw new StudioError(404,'This prospect was not found.');let payload;try{payload=parseProspect(input);assertTransition(current.lifecycle_status,payload.lifecycle_status);}catch(error){if(error instanceof z.ZodError)throw error;throw new StudioError(400,'Check the website URL and the allowed lifecycle stages.');}const query=new URLSearchParams({id:'eq.'+id,updated_at:'eq.'+expected_updated_at,select:'id'});const result=await database<Prospect[]>(session,'studio_prospects?'+query,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});if(!result.length)throw new StudioError(409,'This record changed while you were editing. Reload it before saving again.');return Response.json({id:result[0].id});}catch(error){return apiError(error);}}
