@@ -44,6 +44,17 @@ test('successful redirects check robots on the final origin and reject non-HTML 
  await assert.rejects(()=>fetchAuditPage('https://fixture.co.za/',async url=>url.endsWith('robots.txt')?page(url,'',404):page(url,'{}',200,{'content-type':'application/json'})),/HTML/);
  await assert.rejects(()=>fetchAuditPage('https://fixture.co.za/',async url=>page(url,'',403)),/allow|rules/);
 });
+test('outbound connection errors distinguish host permissions from website TLS errors',async()=>{
+ const url='https://fixture.co.za/';
+ const denied=Object.assign(new Error('socket details'),{code:'EACCES'});
+ await assert.rejects(()=>fetchAuditPage(url,async()=>{throw denied;}),
+  {code:'network_permission',message:/host denied.*crawler rules/});
+ const tls=Object.assign(new Error('certificate details'),{code:'ERR_TLS_CERT_ALTNAME_INVALID'});
+ await assert.rejects(()=>fetchAuditPage(url,async target=>{
+  if(target.endsWith('/robots.txt'))return page(target,'',404);
+  throw tls;
+ }),{code:'tls_failed',message:/secure connection.*website page/});
+});
 test('reports provide evidence and recommendations without claiming browser measurements',()=>{
  const html='<html lang="en"><head><title>A useful business website</title><meta name="description" content="A clear description of this business and the services offered to visitors every day."><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="/"></head><body><h1>Our business</h1><img src="a.png" alt=""><label for="name">Your name</label><input id="name"><a href="/contact">Contact us</a><script>throw new Error("must never execute")</script></body></html>';
  const report=analyzePage(page('https://fixture.co.za/',html),'https://fixture.co.za/');
@@ -53,4 +64,10 @@ test('reports provide evidence and recommendations without claiming browser meas
  const bad=analyzePage(page('http://fixture.co.za/','<html><meta name=robots content=noindex><img src=x><input><script src=x></script></html>'),'http://fixture.co.za/');
  for(const id of ['title','description','h1','language','viewport','image-alt','form-labels','indexing','https','contact-action'])assert.equal(bad.findings.find(f=>f.id===id)?.status,'warning',id);
  assert.ok(bad.findings.filter(f=>f.status==='warning').every(f=>f.recommendation.length>20));
+});
+test('reports decode HTML entities in website copy',()=>{
+ const url='https://example.com/';
+ const report=analyzePage(page(url,'<title>Plumbing &amp; drainage</title><h1>Repairs &amp; maintenance</h1>'),url);
+ assert.equal(report.pageTitle,'Plumbing & drainage');
+ assert.match(report.findings.find(finding=>finding.id==='h1')?.evidence??'',/Repairs & maintenance/);
 });

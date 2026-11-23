@@ -39,3 +39,21 @@ test('sparse sites are not silently replaced with a salon draft', () => {
   assert.deepEqual(result.services, []);
   assert.equal(result.about.body, '');
 });
+
+test('drafts retain visible service details and surface the existing quote action', () => {
+  const result = draftFromWebsite(prospect, page(`<html><head><meta name="description" content="Generic search description"></head>
+    <body><main><h1>Water services</h1><p>We maintain stormwater networks for local councils.</p>
+    <div><h2>Services for councils</h2></div>
+    <div><ul><li>Inspection: Camera surveys for stormwater assets.</li></ul>
+    <h3>Pipe relining</h3><p>Rehabilitation for existing networks.</p></div>
+    <h2>About us</h2><p>Our crews are based in Hamilton.</p>
+    <a href="/contact">Contact us</a><a href="/quotes">Request a free quote</a></main></body></html>`));
+  assert.equal(result.hero.body, 'We maintain stormwater networks for local councils.');
+  assert.equal(result.hero.cta, 'Request a free quote');
+  assert.equal(result.contact.bookingUrl, 'https://fixture-engineering.co.nz/quotes');
+  assert.deepEqual(result.services.map(({ name, description }) => [name, description]), [
+    ['Inspection', 'Camera surveys for stormwater assets.'],
+    ['Pipe relining', 'Rehabilitation for existing networks.'],
+  ]);
+  assert.equal(result.about.body, 'Our crews are based in Hamilton.');
+});

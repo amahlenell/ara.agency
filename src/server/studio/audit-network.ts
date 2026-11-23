@@ -8,6 +8,27 @@ export class AuditFailure extends Error {
   code: string;
   constructor(code: string, message: string) { super(message); this.code = code; }
 }
+function requestFailure(error: unknown, phase: 'crawler rules' | 'website page') {
+  if (error instanceof AuditFailure) return error;
+  const rawCode = (error as NodeJS.ErrnoException | null)?.code;
+  const code = typeof rawCode === 'string' ? rawCode : undefined;
+  if (error instanceof Error && (['AbortError', 'TimeoutError'].includes(error.name) || code === 'ETIMEDOUT')) {
+    return new AuditFailure('timeout', `Studio timed out while requesting the ${phase}.`);
+  }
+  if (code === 'EACCES' || code === 'EPERM') {
+    return new AuditFailure('network_permission', `Studio's host denied the outgoing connection while requesting the ${phase}.`);
+  }
+  if (code === 'ECONNRESET' || code === 'ECONNREFUSED' || code === 'EHOSTUNREACH' || code === 'ENETUNREACH') {
+    return new AuditFailure('connection_failed', `Studio could not establish or maintain the connection while requesting the ${phase}.`);
+  }
+  if (code?.startsWith('ERR_TLS_') || code?.startsWith('ERR_SSL_') || code?.includes('CERT_') ||
+      code === 'DEPTH_ZERO_SELF_SIGNED_CERT' || code === 'SELF_SIGNED_CERT_IN_CHAIN' || code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+    return new AuditFailure('tls_failed', `Studio could not verify the secure connection while requesting the ${phase}.`);
+  }
+  const reason = typeof code === 'string' && /^[A-Z0-9_]{1,60}$/.test(code) ? code : 'unknown';
+  console.warn('Studio audit transport error', { phase, reason });
+  return new AuditFailure('transport_failed', `Studio could not complete the request for the ${phase}.`);
+}
 export const auditAgent = 'ARAStudioAudit/1.0';
 export type PageResponse = { url: string; status: number; headers: Record<string,string>; body: string; bytes: number; responseMs: number };
 export function isPublicIPv4(address: string) {
@@ -110,8 +131,8 @@ export async function fetchAuditPage(value: string, read: Reader = readPublicPag
     signal.throwIfAborted();
     if(visited.has(url.href))throw new AuditFailure('redirect_loop','The website redirects in a loop.');
     visited.add(url.href);
-    await robotsFor(url,signal,read);
-    const page=await read(url.href,signal);
+    await robotsFor(url,signal,read).catch(error => { throw requestFailure(error, 'crawler rules'); });
+    const page=await read(url.href,signal).catch(error => { throw requestFailure(error, 'website page'); });
     if(redirects.has(page.status)&&page.headers.location) { url=auditURL(new URL(page.headers.location,url).href);continue; }
     if(page.status<200||page.status>=300)throw new AuditFailure('http_error',`The website returned HTTP ${page.status}. No page report was generated.`);
     if(!/^(text\/html|application\/xhtml\+xml)\b/i.test(page.headers['content-type']||''))throw new AuditFailure('not_html','This URL does not return an HTML web page.');

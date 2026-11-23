@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['node-html-parser'],
   distDir:process.env.STUDIO_E2E==='true'?'work/redesign-e2e-build':'.next',
   poweredByHeader:false,
   turbopack:{root:process.cwd()},

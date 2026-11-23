@@ -28,7 +28,15 @@ export async function runAudit(session:StudioSession,prospectId:string,inspect=f
   });
   const audit=rows[0];if(!audit)throw new StudioError(503,'The audit could not be started.');
   let result:{status:'completed';report:AuditReport}|{status:'failed';error_message:string};
-  try { result={status:'completed',report:analyzePage(await inspect(audit.website_url),audit.website_url)}; }
+  try {
+    const page = await inspect(audit.website_url);
+    try {
+      result = { status:'completed', report:analyzePage(page, audit.website_url) };
+    } catch {
+      console.error('Studio could not generate an audit report', { auditId:audit.id });
+      result = { status:'failed', error_message:'Studio reached the website but could not analyze its HTML.' };
+    }
+  }
   catch(error) {
     result={status:'failed',error_message:error instanceof AuditFailure?error.message:error instanceof Error&&['AbortError','TimeoutError'].includes(error.name)?'The website took too long to respond. Try again later.':'The website could not be reached securely. It may be unavailable or blocking automated requests.'};
   }

@@ -10,7 +10,9 @@ export function SourceWebsite({ content, draft }: { content: RedesignContent; dr
   const contactLink = safeBookingLink(contact.bookingUrl);
   const emailLink = contact.email && 'mailto:' + encodeURIComponent(contact.email);
   const phoneLink = contact.phone && 'tel:' + contact.phone.replace(/[^\d+]/g, '');
-  const offerFirst = services.length >= 2;
+  const exploreOfferings = services.length > 0 && /^explore\b/i.test(hero.cta);
+  const primaryLink = exploreOfferings ? '#beauty-services' : contactLink || '#beauty-contact';
+  const offerFirst = exploreOfferings && services.length >= 2;
 
   return <div className="source-canvas"><article className="source-site" style={style}>
     <header className="source-nav"><a href="#beauty-top">{brand.name}</a><nav aria-label="Concept navigation">
@@ -21,7 +23,7 @@ export function SourceWebsite({ content, draft }: { content: RedesignContent; dr
     <section className={'source-hero' + (offerFirst ? ' source-offer-first' : '')} id="beauty-top">
       <div>{hero.eyebrow && <p className="source-eyebrow">{hero.eyebrow}</p>}<h1>{hero.heading}</h1></div>
       <div>{hero.body && <p>{hero.body}</p>}{brand.tagline && <p>{brand.tagline}</p>}
-        <a className="source-button" href={services.length ? '#beauty-services' : '#beauty-contact'}>{hero.cta}</a></div>
+        <a className="source-button" href={primaryLink} rel={contactLink && primaryLink === contactLink ? 'noreferrer' : undefined}>{hero.cta}</a></div>
     </section>
     {services.length > 0 && <section className="source-section" id="beauty-services">
       <h2>What we offer</h2><div className="source-offers">

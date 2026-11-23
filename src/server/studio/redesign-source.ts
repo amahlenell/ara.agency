@@ -1,17 +1,48 @@
-import { createRequire } from 'node:module';
+import { parse } from 'node-html-parser';
+import type { HTMLElement } from 'node-html-parser';
 import { newRedesignContent, redesignContentSchema, safeBookingLink } from './redesign-content.ts';
 import type { Prospect } from './domain.ts';
 import type { PageResponse } from './audit-network.ts';
 
-type Element = {
-  textContent: string;
-  getAttribute(name: string): string | undefined;
-  querySelector(selector: string): Element | null;
-  querySelectorAll(selector: string): Element[];
-  remove(): void;
-};
-const { parse } = createRequire(import.meta.url)('next/dist/compiled/node-html-parser') as { parse(html: string): Element };
 const clean = (value: string | undefined, limit: number) => (value || '').replace(/\s+/g, ' ').trim().slice(0, limit).trim();
+const offeringsHeading = /^(?:(?:our\s+)?(?:services|products|solutions|specialties|specialities)\b|what we (?:do|offer)\b)/i;
+const aboutHeading = /^(?:about\b|who we are\b|our story\b)/i;
+const contactAction = /^(?:contact(?: us)?|get in touch|book(?:\s+(?:now|online|(?:(?:an?|your)\s+)?appointment)(?:\s+now)?)?|(?:get|request)\s+(?:a\s+)?(?:free\s+)?quote)$/i;
+
+function importSections(main: HTMLElement, draft: ReturnType<typeof newRedesignContent>) {
+  const seen = new Set<string>();
+  let section = '';
+  let descriptionTarget: (typeof draft.services)[number] | undefined;
+
+  for (const node of main.querySelectorAll('h2,h3,li,p')) {
+    const tag = node.tagName.toLowerCase();
+    if (tag === 'h2') {
+      const heading = clean(node.textContent, 100);
+      section = offeringsHeading.test(heading) ? 'offerings' : aboutHeading.test(heading) ? 'about' : '';
+      if (section === 'about') draft.about.heading = heading;
+      descriptionTarget = undefined;
+      continue;
+    }
+    if (section === 'about' && tag === 'p' && !draft.about.body) {
+      draft.about.body = clean(node.textContent, 600);
+    }
+    if (section !== 'offerings') continue;
+    if (tag === 'p' && descriptionTarget && !descriptionTarget.description) {
+      descriptionTarget.description = clean(node.textContent, 400);
+      continue;
+    }
+    if (tag !== 'h3' && tag !== 'li') continue;
+    descriptionTarget = undefined;
+    const item = clean(node.textContent, 490);
+    const [label, ...details] = item.split(/:\s+|\s+[–—]\s+/);
+    const name = clean(label, 80);
+    if (!name || label.length > 80 || seen.has(name.toLowerCase()) || draft.services.length >= 12) continue;
+    seen.add(name.toLowerCase());
+    const service = { name, description: clean(details.join(' — '), 400), price: '' };
+    draft.services.push(service);
+    if (tag === 'h3') descriptionTarget = service;
+  }
+}
 
 export function draftFromWebsite(prospect: Prospect, page: PageResponse) {
   const doc = parse(page.body);
@@ -26,18 +57,9 @@ export function draftFromWebsite(prospect: Prospect, page: PageResponse) {
 
   const draft = newRedesignContent(prospect);
   const finalUrl = new URL(page.url);
-  const sections = main.querySelectorAll('section,article');
-  const findSection = (pattern: RegExp) => sections.find(section => pattern.test(clean(section.querySelector('h2')?.textContent, 100)));
-  const offerings = findSection(/^(?:our\s+)?(?:services|products|solutions|what we (?:do|offer))\b/i);
-  const about = findSection(/^(?:about|who we are|our story)\b/i);
-  const names = new Set<string>();
-  for (const item of offerings?.querySelectorAll('h3') || []) {
-    const name = clean(item.textContent, 80);
-    if (name && !names.has(name.toLowerCase()) && draft.services.length < 12) {
-      names.add(name.toLowerCase());
-      draft.services.push({ name, description: '', price: '' });
-    }
-  }
+  draft.about.heading = 'About ' + prospect.business_name.slice(0, 90);
+  draft.about.body = '';
+  importSections(main, draft);
 
   const brandColor = doc.querySelector('meta[name="theme-color"]')?.getAttribute('content') || '';
   if (/^#[\da-f]{6}$/i.test(brandColor)) {
@@ -47,6 +69,7 @@ export function draftFromWebsite(prospect: Prospect, page: PageResponse) {
     } else draft.brand.palette = 'midnight';
   } else draft.brand.palette = 'midnight';
 
+  let actionLabel = '';
   for (const anchor of doc.querySelectorAll('a[href]').slice(0, 200)) {
     const href = anchor.getAttribute('href') || '';
     if (/^mailto:/i.test(href) && !draft.contact.email) {
@@ -60,25 +83,28 @@ export function draftFromWebsite(prospect: Prospect, page: PageResponse) {
       const candidate = redesignContentSchema.shape.contact.shape.phone.safeParse(href.slice(4));
       if (candidate.success) draft.contact.phone = candidate.data;
     }
-    if (!draft.contact.bookingUrl && /^(contact(?: us)?|get in touch|book(?: now| online)?|request a quote)$/i.test(clean(anchor.textContent, 80))) {
+    const label = clean(anchor.textContent, 80);
+    if (contactAction.test(label) && label.length <= 40) {
       try {
         const target = new URL(href, finalUrl);
         if (target.origin === finalUrl.origin && !target.hash && href && !href.startsWith('#')) {
-          draft.contact.bookingUrl = safeBookingLink(target.href) || '';
+          const link = safeBookingLink(target.href);
+          const specificAction = /^(?:book\b|(?:get|request)\b.*\bquote$)/i.test(label);
+          if (link && (!draft.contact.bookingUrl || (specificAction && /^(?:contact|get in touch)/i.test(actionLabel)))) {
+            draft.contact.bookingUrl = link;
+            actionLabel = label;
+          }
         }
       } catch { /* Skip malformed source links. */ }
     }
   }
 
   const title = clean(doc.querySelector('title')?.textContent, 100);
-  const aboutText = clean(about?.querySelector('p')?.textContent, 600);
   draft.version = 2;
   draft.brand.art = 'none';
   draft.hero.heading = heading.length >= 3 ? heading : prospect.business_name.length >= 3 ? prospect.business_name.slice(0, 120) : 'Welcome to ' + prospect.business_name;
-  draft.hero.body = description || paragraphs[0] || draft.hero.body;
-  draft.hero.cta = draft.services.length ? 'Explore what we offer' : 'Get in touch';
-  draft.about.heading = clean(about?.querySelector('h2')?.textContent, 100) || 'About ' + prospect.business_name.slice(0, 90);
-  draft.about.body = aboutText || draft.about.body;
+  draft.hero.body = paragraphs[0] || description || draft.hero.body;
+  draft.hero.cta = actionLabel || (draft.services.length ? 'Explore what we offer' : 'Get in touch');
   draft.seo.title = title.length >= 2 ? title : draft.seo.title;
   draft.seo.description = description || draft.hero.body.slice(0, 200);
   return redesignContentSchema.parse(draft);

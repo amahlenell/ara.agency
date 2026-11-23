@@ -1,10 +1,6 @@
-import { createRequire } from 'node:module';
+import { parse } from 'node-html-parser';
 import type { PageResponse } from './audit-network.ts';
 
-// Next is pinned in package-lock.json and ships this maintained, non-executing HTML parser.
-// Keeping parsing on the server avoids loading the prospect's scripts or remote assets.
-type Element = { textContent:string; attributes:Record<string,string>; getAttribute(name:string):string|undefined; querySelector(selector:string):Element|null; querySelectorAll(selector:string):Element[]; closest(selector:string):Element|null; remove():void };
-const { parse } = createRequire(import.meta.url)('next/dist/compiled/node-html-parser') as {parse(html:string):Element};
 export const auditCategories = ['SEO','Mobile setup','Accessibility','Performance','Conversion','Security'] as const;
 export type AuditCategory = typeof auditCategories[number];
 export type Finding = {id:string;category:AuditCategory;status:'pass'|'warning'|'manual';priority:'high'|'medium'|'low';title:string;evidence:string;recommendation:string};
