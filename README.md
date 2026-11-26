@@ -1,10 +1,10 @@
 # ARA Agency
 
-An SEO and GEO focused agency website for South Africa and New Zealand. The implementation follows the latest supplied charcoal, orange and white agency design references, with a sculptural hero and clear editorial layouts. ARA is never expanded in public content.
+An agency website for SEO and generative engine optimisation services in South Africa and New Zealand.
 
 ## Stack and layout
 
-Next.js App Router, React, TypeScript, Tailwind CSS, Motion, Lucide and Zod. Page content is server-rendered and prebuilt from shared presentation templates. The templates in `src/pages.mjs`, `src/ui.mjs` and `src/content.mjs` retain the design work; Next owns routing, metadata, image generation and the enquiry endpoint. Browser demos use a small progressive enhancement script in `public/client.js`. The server uses Supabase's REST API with a server-only service-role key. No paid AI APIs are used.
+Next.js App Router, React, TypeScript, Tailwind CSS, Motion, Lucide and Zod. Page content is server-rendered and prebuilt from shared presentation templates. Shared templates live in `src/pages.mjs`, `src/ui.mjs` and `src/content.mjs`. Next.js handles routing, metadata, image generation and enquiries. Browser demos use a small progressive enhancement script in `public/client.js`. The server uses Supabase's REST API with a server-only service-role key. No paid AI APIs are used.
 
 ## Run
 
@@ -52,4 +52,4 @@ Original Pexels filenames: Gustavo Fring (`pexels-gustavo-fring-7446597.jpg`, bu
 
 Import this project using the Next.js preset; use the repository root as the root directory. The install command is `npm ci`, build command is `npm run build`, and the output directory uses Next's default. Use Node 22 or 24. Configure preview and production variables separately. Keep indexing disabled in previews. Do not commit secrets or replace an existing production project without checking its ownership and scope. There is no purchased domain assumed.
 
-The source repository is [amahlenell/ara.agency](https://github.com/amahlenell/ara.agency). The final hosting target still needs to be selected. Live Supabase, Turnstile, Resend and analytics configuration require verification before a public launch.
+Live Supabase, Turnstile, Resend and analytics configuration require verification before a public launch.
